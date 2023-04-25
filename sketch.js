@@ -1,7 +1,7 @@
 const gravity = .25;
 const colors = ['red', 'orange', 'yellow', 'lime', 'cyan', 'magenta', 'white'];
-const width = 1900;
-const height = 1080;
+let width = 1900;
+let height = 1080;
 
 let endColor;
 let houses;
@@ -28,7 +28,7 @@ function setup() {
 	xCenter = ((windowWidth - 40) / 2) + 20;
 	yCenter = ((windowWidth - 40) / 2) + 20;
 	
-	rootElement = new Element(20, 20, windowWidth-20, windowHeight-20, xCenter, yCenter, 0, 1, "No-Content-Yet", -1)
+	rootElement = new Element(20, 20, windowWidth-20, windowHeight-20, xCenter, yCenter, 0, 1, "Root", -1)
 	fetchJson(jsonPath);
 }
 
@@ -36,12 +36,51 @@ function windowResized() {
 	resizeCanvas(windowWidth-10, windowHeight-10);
 }
 
-function renderInHtmlNoFiltering() {
+function renderInHtmlNoFiltering(rootElement) {
 	divForHtml = select('#Rendered_view');
 
-	divForHtml.html("Hello world from p5js");
+	currentDepth = 0;
+
+	renderOnePartOfHtml(rootElement, currentDepth);
 }
 
+function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
+	console.log("Depth "+currentDepth);
+	for (let iElements = 0; iElements < currentElement.elements.length; iElements++)
+	{
+		child = currentElement.elements[iElements];
+
+		console.log("element "+child.content);
+		if (child.nbOfElements() + child.nbOfChildren() == 0)
+		{
+			// A leaf :)
+			divForHtml.html(child.content + "<br/>", true);
+		}
+		else
+		{
+			divForHtml.html("<div class=\"rendered-child-level"+currentDepth+"\"><p>", true);
+			renderOnePartOfHtml(child, currentDepth + 1, usedDiv)
+			divForHtml.html("</p></div>", true);
+		}
+	}
+	for (let iElements = 0; iElements < currentElement.children.length; iElements++)
+	{
+		child = currentElement.children[iElements];
+
+		console.log("children "+child.content);
+		if (child.nbOfElements() + child.nbOfChildren() == 0)
+		{
+			// A leaf :)
+			divForHtml.html(child.content + "<br/>", true);
+		}
+		else
+		{
+			divForHtml.html("<div class=\"rendered-element-level"+currentDepth+"\"><p>", true);
+			renderOnePartOfHtml(child, currentDepth + 1, usedDiv)
+			divForHtml.html("</p></div>", true);
+		}
+	}
+}
 // Fetch the JSON file
 function fetchJson(jsonPath){
 	fetch(jsonPath)
@@ -58,9 +97,9 @@ function fetchJson(jsonPath){
 		// Call the traverseJson function with depth 0
 		traverseJson(json, 0, rootElement);
   })
-  .catch(error => {
+  /*.catch(error => {
 	console.error(`Error fetching or parsing JSON file: ${error}`);
-  });
+  });*/
 }
 // Function to recursively traverse the JSON object and store objects in partitions based on depth
 function traverseJson(obj, depth, currentElement) {
@@ -76,7 +115,7 @@ function traverseJson(obj, depth, currentElement) {
 		for (let key in obj) {
 	  		if (obj.hasOwnProperty(key)) { // Needed ?
 				// The boundaries can only be computed on the way back!
-				oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth, nbInElement, "", currentElement)
+				oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, "Child", currentElement)
 
 				nbInElement++;
 
@@ -100,7 +139,7 @@ function traverseJson(obj, depth, currentElement) {
 		for (let item in obj) {
 			
 			// The boundaries can only be computed on the way back!
-			oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth, nbInElement, "", currentElement)
+			oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, "Array Element", currentElement)
 
 			nbInElement++;
 
@@ -117,7 +156,7 @@ function traverseJson(obj, depth, currentElement) {
 	}
 	// We are back, calculate the boundaries
 	
-	console.log("Nb elements: " + currentElement.nbOfElements +" nb children: " + currentElement.nbOfChildren);
+	console.log("Nb elements: " + currentElement.nbOfElements() +" nb children: " + currentElement.nbOfChildren());
 	if (currentElement.parent != -1)
 	{
 		console.log("I am " + currentElement.parent.nbInParent + " in my parent segment");
@@ -125,13 +164,14 @@ function traverseJson(obj, depth, currentElement) {
 	
 	// Call doSomething() when the full JSON browsing is finished
 	if (depth === 0) {
+		console.log("Current element "+ currentElement.content); // Should always be root and only root (TODO: add test)
 		// Finished, calculate the boundaries
 		// Element in columns aside children in columns too
 
-		pointsForVoronoi = doTheInitialDistribution(currentElement, windowWidth-40, windowHeight-40);
+		pointsForVoronoi = doTheInitialDistribution(currentElement);
 
-		renderInHtmlNoFiltering();
-
+		renderInHtmlNoFiltering(currentElement);
+		
 		//console.log("Sites 0: " + pointsForVoronoi);
 		makeHouses(pointsForVoronoi);
 
@@ -139,72 +179,99 @@ function traverseJson(obj, depth, currentElement) {
 	}
 }
 
-function doTheInitialDistribution(rootElement, width, height) {
-  let allPoints = []; // Array to store all points
-  console.log("0")
-  // Function to distribute objects on plane for a given depth level
-  const distributeObjectsForLevel = (level, element) => {
-    if (element.length === 0) return;
+function reinitBoundaries() {
+	// Get the current width and height...
+	width = windowWidth-20;
+	height = windowHeight-20;
 
-    // Call the distributeObjectsOnPlane method with current xInit and yInit
-    const distributedObjects = distributeObjectsOnPlane(element, xMin, yMin, width, height);
-    // Log the depth level and the distributed objects
-    //console.log(`Depth: ${level}, Objects: ${JSON.stringify(distributedObjects)}`);
-
-    // Update xInit and yInit for next level
-    xInit = distributedObjects[distributedObjects.length - 1].x + 50; // Set xInit to the last x-coordinate + 50
-    yInit = distributedObjects[distributedObjects.length - 1].y + 50; // Set yInit to the last y-coordinate + 50
-
-    // Add the distributed objects to the allPoints array
-    allPoints = allPoints.concat(distributedObjects);
-  };
-
-  // Iterate through the partition object and call distributeObjectsForLevel for each depth level
-  /*for (let level in partitions) {
-    if (partitions.hasOwnProperty(level)) {
-      distributeObjectsForLevel(level, partitions);
-    }
-  }
-  */
-  //console.log(`All points: ${JSON.stringify(allPoints)}`);
-
-  return allPoints; // Return the full list of points
+	xCenter = ((width - 40) / 2) + 20;
+	yCenter = ((height - 40) / 2) + 20;
 }
 
-function distributeObjectsOnPlane(element, xSize, ySize, width, height) {
-	const numObjects = partition.length;
+function doTheInitialDistribution(currentRootElement) {
+	let allPoints = []; // Array to store all points
+
+	reinitBoundaries();
+
+	// Function to distribute objects on plane for a given depth level
+	const distributeObjectsForLevel = (element) => {
+    	if (element.length === 0) return;
+
+    	// Call the distributeObjectsOnPlane method with current xInit and yInit
+    	const distributedObjects = distributeObjectsOnPlane(element, element.xMax - element.xMin, element.yMax - element.yMin, element.xMin, element.yMin);
+
+    	// Add the distributed objects to the allPoints array
+    	allPoints = allPoints.concat(distributedObjects);
+  	};
+
+  	// Iterate through the partition object and call distributeObjectsForLevel for each depth level
+  	distributeObjectsForLevel(currentRootElement);
+
+  	//console.log(`All points: ${JSON.stringify(allPoints)}`);
+
+  	return allPoints; // Return the full list of points
+}
+const result = [];
+function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
+	const numObjects = element.nbOfChildren() + element.nbOfElements();
+	console.log(" AAAA: numObjects " + numObjects +" , " + element.nbOfChildren() +" : " + element.nbOfElements() );
 	const gridSize = Math.ceil(Math.sqrt(numObjects)); // Grid size is the square root of number of objects rounded up
 	const cellWidth = xSize / gridSize;
 	const cellHeight = ySize / gridSize;
-	const result = [];
+	//const result = [];
 
 	//console.log(`Num objects: ${numObjects}, partitions: ${partition}`);
 
-	for (let i = 0; i < numObjects; i++) {
-	  const obj = partition[i];
-	  const row = Math.floor(i / gridSize);
-	  const col = i % gridSize;
-	  const xPos = col * cellWidth;
-	  const yPos = row * cellHeight;
-	  
-	  // Use xPos and yPos as the coordinates to place the object on the plane
-	  //console.log(`Object: ${obj.key}: ${obj.value}`);
-	  //console.log(`Position: x=${xPos}, y=${yPos}`);
-	  // Alternatively, you can use xPos and yPos to dynamically create elements on the plane using DOM manipulation or other rendering techniques.
+	let i = 0;
 
-	  obj.x = xPos;
-	  obj.y = yPos;
+	for (let iElements = 0; iElements < element.elements.length; iElements++)
+	{
+		oneElement = element.elements[iElements];
+		distributeElements(i, oneElement);
 
-	  strokeWeight(1);
-	  stroke(153);
-		push();
-	  text(obj.key, xPos, yPos);
-	  pop();
-	  // Store the coordinates as an object in the result array
-	  result.push({ x: xPos, y: yPos });
+		distributeObjectsOnPlane(oneElement,oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin);
+		i++;
+	}
+
+	for (let iElements = 0; iElements < element.children.length; iElements++)
+	{
+		oneElement = element.children[iElements];
+		distributeElements(i, oneElement);
+
+		distributeObjectsOnPlane(oneElement,oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin);
+		i++;
 	}
 
 	return result;
+
+	function distributeElements(i, oneElement) {
+		const row = Math.floor(i / gridSize);
+		const col = i % gridSize;
+		const xPos = fromX + col * cellWidth;
+		const yPos = fromY + row * cellHeight;
+
+		// Use xPos and yPos as the coordinates to place the object on the plane
+		//console.log(`Object: ${obj.key}: ${obj.value}`);
+		console.log(" From " + fromX +" , " + fromY +" : " + col + " , " + row + " : " + i);
+		console.log(`Position: x=${xPos}, y=${yPos}`);
+		// Alternatively, you can use xPos and yPos to dynamically create elements on the plane using DOM manipulation or other rendering techniques.
+		oneElement.xMin = xPos;
+		oneElement.yMin = yPos;
+
+		oneElement.xMax = xPos + cellWidth;
+		oneElement.yMax = yPos + cellWidth;
+
+		oneElement.xCenter = xPos + cellWidth / 2;
+		oneElement.yCenter = yPos + cellWidth / 2;
+
+		strokeWeight(1);
+		stroke(153);
+		push();
+		text(oneElement.content, oneElement.xCenter, oneElement.yCenter);
+		pop();
+		// Store the coordinates as an object in the result array
+		result.push({ x: oneElement.xCenter, y: oneElement.yCenter });
+	}
 }
 
 function makeHouses(sites) {
