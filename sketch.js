@@ -194,32 +194,21 @@ function doTheInitialDistribution(currentRootElement) {
 
 	reinitBoundaries();
 
-	// Function to distribute objects on plane for a given depth level
-	const distributeObjectsForLevel = (element) => {
-		if (element.length === 0) return;
+	allPoints = distributeObjectsOnPlane(currentRootElement, currentRootElement.xMax - currentRootElement.xMin, currentRootElement.yMax - currentRootElement.yMin, currentRootElement.xMin, currentRootElement.yMin);
 
-		// Call the distributeObjectsOnPlane method with current xInit and yInit
-		const distributedObjects = distributeObjectsOnPlane(element, element.xMax - element.xMin, element.yMax - element.yMin, element.xMin, element.yMin);
-
-		// Add the distributed objects to the allPoints array
-		allPoints = allPoints.concat(distributedObjects);
-	};
-
-	// Iterate through the partition object and call distributeObjectsForLevel for each depth level
-	distributeObjectsForLevel(currentRootElement);
-
-	//console.log(`All points: ${JSON.stringify(allPoints)}`);
+	console.log(`All points: ${JSON.stringify(allPoints)}`);
 
 	return allPoints; // Return the full list of points
 }
-const result = [];
+
 function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 	const numObjects = element.nbOfChildren() + element.nbOfElements();
 	console.log(" AAAA: numObjects " + numObjects + " , " + element.nbOfChildren() + " : " + element.nbOfElements());
 	const gridSize = Math.ceil(Math.sqrt(numObjects)); // Grid size is the square root of number of objects rounded up
 	const cellWidth = xSize / gridSize;
 	const cellHeight = ySize / gridSize;
-	//const result = [];
+
+	let result = [];
 
 	//console.log(`Num objects: ${numObjects}, partitions: ${partition}`);
 
@@ -229,7 +218,7 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 		oneElement = element.elements[iElements];
 		distributeElements(i, oneElement, true);
 
-		distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin);
+		result = result.concat(distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin));
 		i++;
 	}
 
@@ -237,7 +226,7 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 		oneElement = element.children[iElements];
 		distributeElements(i, oneElement, false);
 
-		distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin);
+		result = result.concat(distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin));
 		i++;
 	}
 
