@@ -4,6 +4,7 @@ let width = 1900;
 let height = 1080;
 
 let endColor;
+let toColor;
 let houses;
 const jsonPath = "cvAlain.json";
 let jsonObject;
@@ -13,6 +14,8 @@ let pointsForVoronoi;
 
 let cvInitialized = false;
 let jsonFound;
+let diagram;
+let ratio;
 
 function setup() {
 	font = loadFont('assets/SourceSansPro-Regular.otf');
@@ -21,6 +24,7 @@ function setup() {
 	voronoiCanvas = createCanvas(windowWidth - 10, windowHeight - 10);
 	voronoiCanvas.parent("voronoiCanvas");
 	endColor = color(64, 0);
+	toColor = color(255, 255, 255);
 
 	// Set text characteristics
 	textFont(font);
@@ -28,12 +32,14 @@ function setup() {
 	xCenter = ((windowWidth - 40) / 2) + 20;
 	yCenter = ((windowWidth - 40) / 2) + 20;
 
-	rootElement = new Element(20, 20, windowWidth - 20, windowHeight - 20, xCenter, yCenter, 0, 1, "Root", -1)
+	ratio = windowWidth/windowHeight;
+	rootElement = new Element(20, 20, windowWidth - 20, windowHeight - 20, xCenter, yCenter, 0, 1, "Root", "Root", -1)
 	fetchJson(jsonPath);
 }
 
 function windowResized() {
 	resizeCanvas(windowWidth - 10, windowHeight - 10);
+	ratio = windowWidth/windowHeight;
 }
 
 function renderInHtmlNoFiltering(rootElement) {
@@ -45,11 +51,11 @@ function renderInHtmlNoFiltering(rootElement) {
 }
 
 function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
-	console.log("Depth " + currentDepth);
+	//console.log("Depth " + currentDepth);
 	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
 		child = currentElement.elements[iElements];
 
-		console.log("element " + child.content);
+		//console.log("element " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
 			divForHtml.html(child.content + "<br/>", true);
@@ -63,7 +69,7 @@ function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
 		child = currentElement.children[iElements];
 
-		console.log("children " + child.content);
+		//console.log("children " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
 			divForHtml.html(child.content + "<br/>", true);
@@ -108,7 +114,7 @@ function traverseJson(obj, depth, currentElement) {
 		for (let key in obj) {
 			if (obj.hasOwnProperty(key)) { // Needed ?
 				// The boundaries can only be computed on the way back!
-				oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, "Child", currentElement)
+				oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, key, "Child", currentElement)
 
 				nbInElement++;
 
@@ -137,7 +143,7 @@ function traverseJson(obj, depth, currentElement) {
 			item = obj[iElement];
 
 			// The boundaries can only be computed on the way back!
-			oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, "Array Element", currentElement)
+			oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, "", "Array Element", currentElement)
 
 			nbInElement++;
 
@@ -174,92 +180,200 @@ function traverseJson(obj, depth, currentElement) {
 		renderInHtmlNoFiltering(currentElement);
 
 		//console.log("Sites 0: " + pointsForVoronoi);
-		makeHouses(pointsForVoronoi);
+		//makeHouses(pointsForVoronoi);
 
 		cvInitialized = true;
 	}
 }
 
-function reinitBoundaries() {
-	// Get the current width and height...
-	width = windowWidth - 20;
-	height = windowHeight - 20;
-
-	xCenter = ((width - 40) / 2) + 20;
-	yCenter = ((height - 40) / 2) + 20;
-}
-
 function doTheInitialDistribution(currentRootElement) {
 	let allPoints = []; // Array to store all points
 
-	reinitBoundaries();
+	allPoints = distributeObjectsOnPlane(currentRootElement, currentRootElement.xMax - currentRootElement.xMin, currentRootElement.yMax - currentRootElement.yMin, currentRootElement.xMin, currentRootElement.yMin, null);
 
-	allPoints = distributeObjectsOnPlane(currentRootElement, currentRootElement.xMax - currentRootElement.xMin, currentRootElement.yMax - currentRootElement.yMin, currentRootElement.xMin, currentRootElement.yMin);
-
-	console.log(`All points: ${JSON.stringify(allPoints)}`);
+	//console.log(`All points: ${JSON.stringify(allPoints)}`);
 
 	return allPoints; // Return the full list of points
 }
 
 function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
-	const numObjects = element.nbOfChildren() + element.nbOfElements();
-	console.log(" AAAA: numObjects " + numObjects + " , " + element.nbOfChildren() + " : " + element.nbOfElements());
-	const gridSize = Math.ceil(Math.sqrt(numObjects)); // Grid size is the square root of number of objects rounded up
-	const cellWidth = xSize / gridSize;
-	const cellHeight = ySize / gridSize;
-
-	let result = [];
-
-	//console.log(`Num objects: ${numObjects}, partitions: ${partition}`);
-
-	let i = 0;
+	let numObjects = 0;
 
 	for (let iElements = 0; iElements < element.elements.length; iElements++) {
 		oneElement = element.elements[iElements];
-		distributeElements(i, oneElement, true);
-
-		result = result.concat(distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin));
-		i++;
+		
+		if (oneElement.nbOfElements() + oneElement.nbOfChildren() > 0) {
+			numObjects++;
+		}
 	}
 
 	for (let iElements = 0; iElements < element.children.length; iElements++) {
 		oneElement = element.children[iElements];
-		distributeElements(i, oneElement, false);
+		
+		if (oneElement.nbOfElements() + oneElement.nbOfChildren() > 0) {
+			numObjects++;
+		}
+	}
+	//console.log(" AAAA: numObjects " + numObjects + " , " + element.nbOfChildren() + " : " + element.nbOfElements());
 
-		result = result.concat(distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin));
-		i++;
+	// Try to fit to our ratio
+
+	const gridSizeY = Math.ceil(Math.sqrt(numObjects/ratio)); // Grid size is the square root of number of objects rounded up
+	const gridSizeX = Math.ceil(numObjects/gridSizeY)
+
+	console.log(numObjects+" distributed on "+gridSizeX +", "+gridSizeY);
+	const cellWidth = xSize / gridSizeX;
+	const cellHeight = ySize / gridSizeY;
+
+	let result = [];
+	
+	if (!element.withColor && element.depth > 0)
+	{
+		element.withColor = color(50+random(205),50+random(205),40+random(205))
+	}
+	//console.log(`Num objects: ${numObjects}, partitions: ${partition}`);
+
+	let i = 0;
+
+	let textToShow = "";
+
+	for (let iElements = 0; iElements < element.elements.length; iElements++) {
+		oneElement = element.elements[iElements];
+		
+		/*if (!oneElement.withColor)
+		{
+			element.withColor = color(100+random(155),100+random(155),100+random(155))
+		}
+*/
+		if (oneElement.nbOfElements() + oneElement.nbOfChildren() == 0) {
+			textToShow += oneElement.content + "\n";
+		}
+		else
+		{
+			distributeElements(i, oneElement, true);
+			result = result.concat(distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin));
+			i++;
+		}
 	}
 
+	for (let iElements = 0; iElements < element.children.length; iElements++) {
+		oneElement = element.children[iElements];
+		/*
+		if (!oneElement.withColor)
+		{
+			element.withColor = color(100+random(155),100+random(155),100+random(155))
+		}
+		*/
+		if (oneElement.nbOfElements() + oneElement.nbOfChildren() == 0) {
+			textToShow += oneElement.content + "\n";
+		}
+		else
+		{
+			distributeElements(i, oneElement, true);
+			result = result.concat(distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin));
+			i++;
+		}
+	}
+	//console.log(`Full text: ${textToShow}`);
+
+	// Show the content text in the corner (?) of the current element
+	/*
+	push();
+	strokeWeight(1);
+	stroke(0);
+	text(textToShow, element.xMin + 20, element.yMin + 40);
+	pop();
+	*/
 	return result;
 
 	function distributeElements(i, oneElement, createANode) {
-		const row = Math.floor(i / gridSize);
-		const col = i % gridSize;
+		const row = Math.floor(i / gridSizeY);
+		const col = i % gridSizeX;
 		const xPos = fromX + col * cellWidth;
 		const yPos = fromY + row * cellHeight;
 
+		console.log(i+" on "+row +", "+col);
 		// Use xPos and yPos as the coordinates to place the object on the plane
 		//console.log(`Object: ${obj.key}: ${obj.value}`);
-		console.log(" From " + fromX + " , " + fromY + " : " + col + " , " + row + " : " + i);
-		console.log(`Position: x=${xPos}, y=${yPos}`);
+		//console.log(" From " + fromX + " , " + fromY + " : " + col + " , " + row + " : " + i);
+		//console.log(`Position: x=${xPos}, y=${yPos}`);
 		// Alternatively, you can use xPos and yPos to dynamically create elements on the plane using DOM manipulation or other rendering techniques.
 		oneElement.xMin = xPos;
 		oneElement.yMin = yPos;
 
 		oneElement.xMax = xPos + cellWidth;
-		oneElement.yMax = yPos + cellWidth;
+		oneElement.yMax = yPos + cellHeight;
 
 		oneElement.xCenter = xPos + cellWidth / 2;
-		oneElement.yCenter = yPos + cellWidth / 2;
+		oneElement.yCenter = yPos + cellHeight / 2;
+		if (oneElement.parent.withColor)
+		{
+			oneElement.withColor = lerpColor(oneElement.parent.withColor, toColor, 0.2);
+		}
+		rect(oneElement.xMin, oneElement.yMin, oneElement.xMax, oneElement.yMax);
 
 		if (createANode) {
+			
+			push();
 			strokeWeight(1);
 			stroke(153);
-			push();
-			text(oneElement.content, oneElement.xCenter, oneElement.yCenter);
+			text(oneElement.key, oneElement.xMin + 20, oneElement.yMin + 20);
 			pop();
+			
 			// Store the coordinates as an object in the result array
 			result.push({ x: oneElement.xCenter, y: oneElement.yCenter });
+		}
+	}
+}
+
+function drawAllElements(currentElement, currentDepth) {
+	drawElements(rootElement, 0, null);
+}
+
+function drawElements(currentElement, currentDepth) {
+	
+	if (currentElement.withColor)
+	{
+		stroke(currentElement.withColor);
+		fill(currentElement.withColor, 100);
+	}
+
+	rect(currentElement.xMin, currentElement.yMin, currentElement.xMax, currentElement.yMax);
+
+	//console.log("Depth " + currentDepth);
+	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
+		child = currentElement.elements[iElements];
+
+		if (child.nbOfElements() + child.nbOfChildren() == 0) {
+			// A leaf :)
+			push();
+			stroke(0);
+			noFill();
+			text(child.content, child.xMin + 20, child.yMin + 40);
+			pop();
+		}
+		else {
+			drawElements(child, currentDepth + 1)
+		}
+	}
+	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
+		child = currentElement.children[iElements];
+
+		if (child.nbOfElements() + child.nbOfChildren() == 0) {
+			// A leaf :)
+			push();
+			stroke(0);
+			noFill();
+			text(child.content, child.xMin + 20, child.yMin + 40);
+			pop();
+		}
+		else {
+			push();
+			stroke(0);
+			noFill();
+			text(child.key, child.xMin + 20, child.yMin + 40);
+			pop();
+			drawElements(child, currentDepth + 1)
 		}
 	}
 }
@@ -275,7 +389,7 @@ function makeHouses(sites) {
 	// sites. The 'voronoiId' can be used as a key to lookup the associated cell
 	// in diagram.cells.
 
-	var diagram = voronoi.compute(sites, bbox);
+	diagram = voronoi.compute(sites, bbox);
 
 	edges = diagram.edges;
 	nEdges = edges.length;
@@ -337,12 +451,13 @@ function mousePressed() {
 function draw() {
 	//background(64);
 	if (cvInitialized) {
-		makeHouses(pointsForVoronoi);
+		//makeHouses(pointsForVoronoi);
+		drawAllElements();
 	}
 }
 
 class Element {
-	constructor(xMin, yMin, xMax, yMax, xCenter, yCenter, depth, nbInParent, content, parent) {
+	constructor(xMin, yMin, xMax, yMax, xCenter, yCenter, depth, nbInParent, key, content, parent) {
 		this.xMin = xMin;
 		this.yMin = yMin;
 		this.xMax = xMax;
@@ -351,6 +466,7 @@ class Element {
 		this.yCenter = yCenter;
 		this.depth = depth;
 		this.nbInParent = nbInParent;
+		this.key = key;
 		this.content = content;
 		this.parent = parent;
 

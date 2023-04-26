@@ -1,7 +1,5 @@
 {
-	"documentTitle": "Curriculum Vitae",
-	"document": {
-		
+	"Personal Informations": {
 		"fullName": "Dr. Alain Becam",
 		"homeAddress": {
 			"description": "Address",
@@ -12,142 +10,142 @@
 				"country": "Germany"
 			}
 		},
-		"phoneNumbers": {
+		"Phone Numbers": {
 			"mobile": "+49 (0) 111 111 111"
 		},
-		"emailAddresses": [
+		"email Addresses": [
 			"test@test.com",
 			"test@thegiantball.com"
 		],
 		"linkedIn": "www.linkedin.com/in/abecam/",
-		"webPage": "www.thegiantball.com/",
-		"Education": {
-			"Cursus": [
-				{
-					"startYear": "1998",
-					"endYear": "2002",
-					"Institution": "Insa de Lyon",
-					"City": "Villeurbanne",
-					"Country": "France",
-					"Diploma": "PhD in Computer Science"
-				},
-				{
-					"startYear": "1995",
-					"endYear": "1998",
-					"Institution": "Université de Bourgogne",
-					"City": "Dijon",
-					"Country": "France",
-					"Diploma": "MSc in Computer Sciences for the images"
-				},
-				{
-					"startYear": "1993",
-					"endYear": "1995",
-					"Institution": "IUT Informatique de Dijon",
-					"City": "Dijon",
-					"Country": "France",
-					"Diploma": "Two-year technical University Degree in computer sciences (DUT)"
-				}
-			],
-			"Languages": [
-				{
-					"language": "English",
-					"level": "fluent"
-				},
-				{
-					"language": "French",
-					"level": "mother tongue"
-				},
-				{
-					"language": "German",
-					"level": "advanced beginner"
-				},
-				{
-					"language": "Romanian",
-					"level": "beginner"
-				}
-			]
-		},
-		"mainSkills": {
-			"domain": "Computer Sciences",
-			"speciality": "Software analysis and development",
-			"Skills": [
-				{
-					"Name": "Computer languages",
-					"Description": "proficient in Java, advanced in Ruby, C# and C, intermediate in Python, C++ (rusty, was proficient, as with C), Javascript and PHP."
-				},
-				{
-					"Name": "Web-development",
-					"Description": "Ruby on Rails, Vaadin framework, Servlets, SSO implementation"
-				},
-				{
-					"Name": "Databases",
-					"Description": "SQL, relational algebra, DBMS, MySQL, Oracle, PostGres"
-				},
-				{
-					"Name": "Networks",
-					"Description": "client-server, distributed objects and architectures (use and conception), protocols (HTTPD, UDP, TCP, SMTP, familiar with RFCs), and software stacks (theoretical OSI model, TCP/IP)"
-				},
-				{
-					"Name": "Platforms",
-					"Description": "Trello, Jira (Project Management), GitLab, Confluence, Mantis, Kayako"
-				},
-				{
-					"Name": "Systems",
-					"Description": "Desktop and shells usage of Windows (all versions), UNIX (Linux, past usage of Solaris and others) and macOS"
-				},
-				{
-					"Name": "Mobiles applications",
-					"Description": "wrote several applications on Android (0.9 until now)"
-				},
-				{
-					"Name": "Artificial intelligence",
-					"Description": "advanced in knowledge management: ontology, logic, knowledge representation, management of documents (datamining), good knowledge of treatment of signal and of images, knowledge of Machine Learning."
-				},
-				{
-					"Name": "Computers hardware",
-					"Description": "functioning and use, teaching of Hardware architecture with application within WindRiver VxWorks."
-				}
-			]
-		},
-		"otherSkills": [
+		"webPage": "www.thegiantball.com/"
+	},
+	"Education": {
+		"Cursus": [
 			{
-				"name": "Organisational skills and competences",
-				"list": [
-					{
-						"description": "Team supervision"
-					},
-					{
-						"description": "Conferences and meetings organisation"
-					},
-					{
-						"description": "Distant collaborative work, including lead and organisation"
-					}
-				]
-			},
-			{
-				"name": "Social skills and competences",
-				"list": [
-					{
-						"description": "Diplomatic, open, sociable, sincere, dynamic, I take initiatives when needed."
-					},
-					{
-						"description": "I am also creative, efficient, polyvalent and autonomous but also a team player."
-					}
-				]
-			}
-		],
-		"workExperience": [
-			{
-				"startMonth": "Jan",
-				"startYear": "2021",
-				"endMonth": "Feb",
-				"endYear": "2023",
-				"Company": "Insa de Lyon",
+				"startYear": "1998",
+				"endYear": "2002",
+				"Institution": "Insa de Lyon",
 				"City": "Villeurbanne",
 				"Country": "France",
-				"Title": "PhD in Computer Science",
-				"Description": ""
+				"Diploma": "PhD in Computer Science"
+			},
+			{
+				"startYear": "1995",
+				"endYear": "1998",
+				"Institution": "Université de Bourgogne",
+				"City": "Dijon",
+				"Country": "France",
+				"Diploma": "MSc in Computer Sciences for the images"
+			},
+			{
+				"startYear": "1993",
+				"endYear": "1995",
+				"Institution": "IUT Informatique de Dijon",
+				"City": "Dijon",
+				"Country": "France",
+				"Diploma": "Two-year technical University Degree in computer sciences (DUT)"
+			}
+		],
+		"Languages": [
+			{
+				"language": "English",
+				"level": "fluent"
+			},
+			{
+				"language": "French",
+				"level": "mother tongue"
+			},
+			{
+				"language": "German",
+				"level": "advanced beginner"
+			},
+			{
+				"language": "Romanian",
+				"level": "beginner"
 			}
 		]
-	}
+	},
+	"Main Skills": {
+		"Domain": "Computer Sciences",
+		"Speciality": "Software analysis and development",
+		"Skills": [
+			{
+				"Name": "Computer languages",
+				"Description": "proficient in Java, advanced in Ruby, C# and C, intermediate in Python, C++ (rusty, was proficient, as with C), Javascript and PHP."
+			},
+			{
+				"Name": "Web-development",
+				"Description": "Ruby on Rails, Vaadin framework, Servlets, SSO implementation"
+			},
+			{
+				"Name": "Databases",
+				"Description": "SQL, relational algebra, DBMS, MySQL, Oracle, PostGres"
+			},
+			{
+				"Name": "Networks",
+				"Description": "client-server, distributed objects and architectures (use and conception), protocols (HTTPD, UDP, TCP, SMTP, familiar with RFCs), and software stacks (theoretical OSI model, TCP/IP)"
+			},
+			{
+				"Name": "Platforms",
+				"Description": "Trello, Jira (Project Management), GitLab, Confluence, Mantis, Kayako"
+			},
+			{
+				"Name": "Systems",
+				"Description": "Desktop and shells usage of Windows (all versions), UNIX (Linux, past usage of Solaris and others) and macOS"
+			},
+			{
+				"Name": "Mobiles applications",
+				"Description": "wrote several applications on Android (0.9 until now)"
+			},
+			{
+				"Name": "Artificial intelligence",
+				"Description": "advanced in knowledge management: ontology, logic, knowledge representation, management of documents (datamining), good knowledge of treatment of signal and of images, knowledge of Machine Learning."
+			},
+			{
+				"Name": "Computers hardware",
+				"Description": "functioning and use, teaching of Hardware architecture with application within WindRiver VxWorks."
+			}
+		]
+	},
+	"Other Skills": [
+		{
+			"Name": "Organisational skills and competences",
+			"List": [
+				{
+					"description": "Team supervision"
+				},
+				{
+					"description": "Conferences and meetings organisation"
+				},
+				{
+					"description": "Distant collaborative work, including lead and organisation"
+				}
+			]
+		},
+		{
+			"Name": "Social skills and competences",
+			"List": [
+				{
+					"description": "Diplomatic, open, sociable, sincere, dynamic, I take initiatives when needed."
+				},
+				{
+					"description": "I am also creative, efficient, polyvalent and autonomous but also a team player."
+				}
+			]
+		}
+	],
+	"Work Experience": [
+		{
+			"startMonth": "Jan",
+			"startYear": "2021",
+			"endMonth": "Feb",
+			"endYear": "2023",
+			"Company": "Insa de Lyon",
+			"City": "Villeurbanne",
+			"Country": "France",
+			"Title": "PhD in Computer Science",
+			"Description": ""
+		}
+	]
 }
