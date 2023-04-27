@@ -47,10 +47,10 @@ function renderInHtmlNoFiltering(rootElement) {
 
 	currentDepth = 0;
 
-	renderOnePartOfHtml(rootElement, currentDepth, divForHtml);
+	renderOnePartOfHtml(rootElement, currentDepth);
 }
 
-function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
+function renderOnePartOfHtml(currentElement, currentDepth) {
 	//console.log("Depth " + currentDepth);
 	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
 		child = currentElement.elements[iElements];
@@ -58,12 +58,12 @@ function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
 		//console.log("element " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			usedDiv.html(child.content + "<br/>", true);
+			divForHtml.html(child.content + "<br/>", true);
 		}
 		else {
-			usedDiv.html("<div class=\"rendered-child-level" + currentDepth + "\"><p>", true);
-			renderOnePartOfHtml(child, currentDepth + 1, usedDiv)
-			usedDiv.html("</p></div>", true);
+			divForHtml.html("<div class=\"rendered-child-level" + currentDepth + "\"><p>", true);
+			renderOnePartOfHtml(child, currentDepth + 1)
+			divForHtml.html("</p></div>", true);
 		}
 	}
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
@@ -72,12 +72,12 @@ function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
 		//console.log("children " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			usedDiv.html(child.content + "<br/>", true);
+			divForHtml.html(child.content + "<br/>", true);
 		}
 		else {
-			usedDiv.html("<div class=\"rendered-element-level" + currentDepth + "\"><p>", true);
-			renderOnePartOfHtml(child, currentDepth + 1, usedDiv)
-			usedDiv.html("</p></div>", true);
+			divForHtml.html("<div class=\"rendered-element-level" + currentDepth + "\"><p>", true);
+			renderOnePartOfHtml(child, currentDepth + 1)
+			divForHtml.html("</p></div>", true);
 		}
 	}
 }
@@ -87,50 +87,65 @@ function renderInHtmlWithFiltering(rootElement) {
 
 	currentDepth = 0;
 
-	renderOnePartOfHtmlWithFilter(rootElement, currentDepth);
+	renderOnePartOfHtmlWithFilter(rootElement, currentDepth, divForHtml);
 }
 
 function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	//console.log("Depth " + currentDepth);
 	// Create div element for the buttons
-	divForHtml.html(`<div class=\"tab\" id=\"${currentElement.key}${currentDepth}_subbutton\">\n</div>`, true);
-	
+	const current_element_txt = `${currentElement.key}${currentDepth}`;
+	const id_current_element = current_element_txt.replace(/\s+/g, '');
+
+	usedDiv.html(`<div class=\"tab\" id=\"${id_current_element}_subbutton\">\n</div>`, true);
+	//usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_current_element}_subtabcontent\">\n<p>`, true);
 	// Then find it to be able to use them
-	divForButton = select(`#${currentElement.key}${currentDepth}_subbutton.tab`, usedDiv);
+	const divForButton = select(`#${id_current_element}_subbutton`, usedDiv);
 	// Buttons
 	
 	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
 		child = currentElement.elements[iElements];
 
+		const child_element_txt = `${currentElement.key}${currentDepth}`;
+		const id_child_element = child_element_txt.replace(/\s+/g, '');
+
 		//console.log("element " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			divForHtml.html(`${child.content}<br/>`, true);
+			usedDiv.html(`${child.content}<br/>`, true);
 		}
 		else {
 			// Button, then content
-			divForButton.html(`<button class=\"${currentElement.key}${currentElement.depth}_subtablinks\" id=\"\" onclick=\"openSubTabs(event, '${child.key}${child.depth}_subtabcontent', '${currentElement.key}${currentElement.depth})'\">${child.key}</button>`, true)
-			divForHtml.html(`<div class=\"rendered-child-level${currentDepth} id=\"${child.key}${child.depth}_subtabcontent\">\n<p>`, true);
+			if (child.nbOfChildren() > 0)
+			{
+				divForButton.html(`<button class=\"${id_current_element}_subtablinks\" id=\"\" onclick=\"openSubTabs(event, '${id_child_element}_subtabcontent', '${id_current_element}')\">${child.key}</button>`, true)
+			}
+			usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_child_element}_subtabcontent\">\n<p>`, true);
 			renderOnePartOfHtmlWithFilter(child, currentDepth + 1, usedDiv);
-			divForHtml.html("</p>\n</div>", true);
+			usedDiv.html("</p>\n</div>", true);
 		}
 	}
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
 		child = currentElement.children[iElements];
 
+		const child_element_txt = `${currentElement.key}${currentDepth}`;
+		const id_child_element = child_element_txt.replace(/\s+/g, '');
+
 		//console.log("children " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			divForHtml.html(`${child.content}<br/>`, true);
+			usedDiv.html(`${child.content}<br/>`, true);
 		}
 		else {
-			divForButton.html(`<button class=\"${currentElement.key}${currentElement.depth}_subtablinks\" id=\"\" onclick=\"openSubTabs(event, '${child.key}${child.depth}_subtabcontent', '${currentElement.key}${currentElement.depth})'\">${child.key}</button>`, true)
-			divForHtml.html(`<div class=\"rendered-child-level${currentDepth} id=\"${child.key}${child.depth}_subtabcontent\">\n<p>`, true);
+			if (child.nbOfChildren() > 0)
+			{
+				divForButton.html(`<button class=\"${id_current_element}_subtablinks\" id=\"\" onclick=\"openSubTabs(event, '${id_child_element}_subtabcontent', '${id_current_element}')\">${child.key}</button>`, true)
+			}
+			usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_child_element}_subtabcontent\">\n<p>`, true);
 			renderOnePartOfHtmlWithFilter(child, currentDepth + 1, usedDiv);
-			divForHtml.html("</p>\n</div>", true);
+			usedDiv.html("</p>\n</div>", true);
 		}
 	}
-
+	//usedDiv.html("</div>");
 	// Content
 }
 
@@ -196,7 +211,7 @@ function traverseJson(obj, depth, currentElement) {
 			item = obj[iElement];
 
 			// The boundaries can only be computed on the way back!
-			oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, "", "Array Element", currentElement)
+			oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, currentElement.key+"_array"+iElement, "Array Element", currentElement)
 
 			nbInElement++;
 
