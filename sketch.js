@@ -90,6 +90,7 @@ function renderInHtmlWithFiltering(rootElement) {
 	renderOnePartOfHtmlWithFilter(rootElement, currentDepth, divForHtml);
 }
 
+// TODO: identify array from children in the element :)
 function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	//console.log("Depth " + currentDepth);
 	// Create div element for the buttons
@@ -525,6 +526,12 @@ function draw() {
 	}
 }
 
+const TypeOfElement = {
+	Root: 'Root',
+	Object: 'Object',
+	Array: 'Array'
+  };
+
 class Element {
 	constructor(xMin, yMin, xMax, yMax, xCenter, yCenter, depth, nbInParent, key, content, parent) {
 		this.xMin = xMin;
@@ -538,6 +545,7 @@ class Element {
 		this.key = key;
 		this.content = content;
 		this.parent = parent;
+		this.type = TypeOfElement.Root;
 
 		this.elements = []; // Only for a JSON object or an array
 		this.children = []; // Only for a JSON object 
