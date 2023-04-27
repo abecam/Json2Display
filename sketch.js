@@ -47,7 +47,7 @@ function renderInHtmlNoFiltering(rootElement) {
 
 	currentDepth = 0;
 
-	renderOnePartOfHtml(rootElement, currentDepth);
+	renderOnePartOfHtml(rootElement, currentDepth, divForHtml);
 }
 
 function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
@@ -58,12 +58,12 @@ function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
 		//console.log("element " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			divForHtml.html(child.content + "<br/>", true);
+			usedDiv.html(child.content + "<br/>", true);
 		}
 		else {
-			divForHtml.html("<div class=\"rendered-child-level" + currentDepth + "\"><p>", true);
+			usedDiv.html("<div class=\"rendered-child-level" + currentDepth + "\"><p>", true);
 			renderOnePartOfHtml(child, currentDepth + 1, usedDiv)
-			divForHtml.html("</p></div>", true);
+			usedDiv.html("</p></div>", true);
 		}
 	}
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
@@ -72,15 +72,68 @@ function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
 		//console.log("children " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			divForHtml.html(child.content + "<br/>", true);
+			usedDiv.html(child.content + "<br/>", true);
 		}
 		else {
-			divForHtml.html("<div class=\"rendered-element-level" + currentDepth + "\"><p>", true);
+			usedDiv.html("<div class=\"rendered-element-level" + currentDepth + "\"><p>", true);
 			renderOnePartOfHtml(child, currentDepth + 1, usedDiv)
-			divForHtml.html("</p></div>", true);
+			usedDiv.html("</p></div>", true);
 		}
 	}
 }
+
+function renderInHtmlWithFiltering(rootElement) {
+	divForHtml = select('#Filtered_content');
+
+	currentDepth = 0;
+
+	renderOnePartOfHtmlWithFilter(rootElement, currentDepth);
+}
+
+function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
+	//console.log("Depth " + currentDepth);
+	// Create div element for the buttons
+	divForHtml.html(`<div class=\"tab\" id=\"${currentElement.key}${currentDepth}_subbutton\">\n</div>`, true);
+	
+	// Then find it to be able to use them
+	divForButton = select(`#${currentElement.key}${currentDepth}_subbutton.tab`, usedDiv);
+	// Buttons
+	
+	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
+		child = currentElement.elements[iElements];
+
+		//console.log("element " + child.content);
+		if (child.nbOfElements() + child.nbOfChildren() == 0) {
+			// A leaf :)
+			divForHtml.html(`${child.content}<br/>`, true);
+		}
+		else {
+			// Button, then content
+			divForButton.html(`<button class=\"${currentElement.key}${currentElement.depth}_subtablinks\" id=\"\" onclick=\"openSubTabs(event, '${child.key}${child.depth}_subtabcontent', '${currentElement.key}${currentElement.depth})'\">${child.key}</button>`, true)
+			divForHtml.html(`<div class=\"rendered-child-level${currentDepth} id=\"${child.key}${child.depth}_subtabcontent\">\n<p>`, true);
+			renderOnePartOfHtmlWithFilter(child, currentDepth + 1, usedDiv);
+			divForHtml.html("</p>\n</div>", true);
+		}
+	}
+	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
+		child = currentElement.children[iElements];
+
+		//console.log("children " + child.content);
+		if (child.nbOfElements() + child.nbOfChildren() == 0) {
+			// A leaf :)
+			divForHtml.html(`${child.content}<br/>`, true);
+		}
+		else {
+			divForButton.html(`<button class=\"${currentElement.key}${currentElement.depth}_subtablinks\" id=\"\" onclick=\"openSubTabs(event, '${child.key}${child.depth}_subtabcontent', '${currentElement.key}${currentElement.depth})'\">${child.key}</button>`, true)
+			divForHtml.html(`<div class=\"rendered-child-level${currentDepth} id=\"${child.key}${child.depth}_subtabcontent\">\n<p>`, true);
+			renderOnePartOfHtmlWithFilter(child, currentDepth + 1, usedDiv);
+			divForHtml.html("</p>\n</div>", true);
+		}
+	}
+
+	// Content
+}
+
 // Fetch the JSON file
 function fetchJson(jsonPath) {
 	fetch(jsonPath)
@@ -179,6 +232,7 @@ function traverseJson(obj, depth, currentElement) {
 
 		renderInHtmlNoFiltering(currentElement);
 
+		renderInHtmlWithFiltering(currentElement);
 		//console.log("Sites 0: " + pointsForVoronoi);
 		//makeHouses(pointsForVoronoi);
 
@@ -248,7 +302,7 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 		if (oneElement.nbOfElements() + oneElement.nbOfChildren() == 0) {
 			textToShow += oneElement.content + "\n";
 		}
-		else
+		//else
 		{
 			distributeElements(i, oneElement, true);
 			result = result.concat(distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin));
@@ -267,7 +321,7 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 		if (oneElement.nbOfElements() + oneElement.nbOfChildren() == 0) {
 			textToShow += oneElement.content + "\n";
 		}
-		else
+		//else
 		{
 			distributeElements(i, oneElement, true);
 			result = result.concat(distributeObjectsOnPlane(oneElement, oneElement.xMax - oneElement.xMin, oneElement.yMax - oneElement.yMin, oneElement.xMin, oneElement.yMin));
@@ -287,7 +341,7 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 	return result;
 
 	function distributeElements(i, oneElement, createANode) {
-		const row = Math.floor(i / gridSizeY);
+		const row = Math.floor(i / gridSizeX);
 		const col = i % gridSizeX;
 		const xPos = fromX + col * cellWidth;
 		const yPos = fromY + row * cellHeight;
