@@ -90,7 +90,6 @@ function renderInHtmlWithFiltering(rootElement) {
 	renderOnePartOfHtmlWithFilter(rootElement, currentDepth, divForHtml);
 }
 
-// TODO: identify array from children in the element :)
 function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	//console.log("Depth " + currentDepth);
 	// Create div element for the buttons
@@ -101,14 +100,18 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	//usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_current_element}_subtabcontent\">\n<p>`, true);
 	// Then find it to be able to use them
 	const divForButton = select(`#${id_current_element}_subbutton`, usedDiv);
+	divForButton.parent = usedDiv;
 	// Buttons
-	
+	let isFirstButton = true;
+	let firstButtonId = "None";
+
 	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
 		child = currentElement.elements[iElements];
 
-		const child_element_txt = `${currentElement.key}${currentDepth}`;
+		const child_element_txt = `${child.key}${currentDepth}`;
 		const id_child_element = child_element_txt.replace(/\s+/g, '');
 
+		let isButton = false; // If it is a button and it is the first one, we click on it by default.
 		//console.log("element " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
@@ -116,35 +119,54 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 		}
 		else {
 			// Button, then content
-			if (child.nbOfChildren() > 0)
-			{
-				divForButton.html(`<button class=\"${id_current_element}_subtablinks\" id=\"\" onclick=\"openSubTabs(event, '${id_child_element}_subtabcontent', '${id_current_element}')\">${child.key}</button>`, true)
+			if (child.key != "no_key")	{
+				divForButton.html(`<button class=\"${id_current_element}_subtablinks\" id=\"${id_child_element}_subtablinks\" onclick=\"openSubTabs(event, '${id_child_element}_subtabcontent', '${id_current_element}')\">${child.key}</button>`, true)
+				isButton = true;
 			}
-			usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_child_element}_subtabcontent\">\n<p>`, true);
-			renderOnePartOfHtmlWithFilter(child, currentDepth + 1, usedDiv);
-			usedDiv.html("</p>\n</div>", true);
+			usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_child_element}_subtabcontent\">\n</div>`, true);
+			const divForContent = select(`#${id_child_element}_subtabcontent`, usedDiv);
+			divForContent.parent(usedDiv);
+			renderOnePartOfHtmlWithFilter(child, currentDepth + 1, divForContent);
+			if (isFirstButton && isButton)
+			{
+				firstButtonId = `${id_child_element}_subtablinks`;
+				isFirstButton = false;
+			}
 		}
 	}
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
 		child = currentElement.children[iElements];
 
-		const child_element_txt = `${currentElement.key}${currentDepth}`;
+		const child_element_txt = `${child.key}${currentDepth}`;
 		const id_child_element = child_element_txt.replace(/\s+/g, '');
 
+		let isButton = false; // If it is a button and it is the first one, we click on it by default.
 		//console.log("children " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
 			usedDiv.html(`${child.content}<br/>`, true);
 		}
 		else {
-			if (child.nbOfChildren() > 0)
-			{
-				divForButton.html(`<button class=\"${id_current_element}_subtablinks\" id=\"\" onclick=\"openSubTabs(event, '${id_child_element}_subtabcontent', '${id_current_element}')\">${child.key}</button>`, true)
+			if (child.key != "no_key") {
+				divForButton.html(`<button class=\"${id_current_element}_subtablinks\" id=\"${id_child_element}_subtablinks\" onclick=\"openSubTabs(event, '${id_child_element}_subtabcontent', '${id_current_element}')\">${child.key}</button>`, true)
+				isButton = true;
 			}
-			usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_child_element}_subtabcontent\">\n<p>`, true);
-			renderOnePartOfHtmlWithFilter(child, currentDepth + 1, usedDiv);
-			usedDiv.html("</p>\n</div>", true);
+			usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_child_element}_subtabcontent\">\n</div>`, true);
+			const divForContent = select(`#${id_child_element}_subtabcontent`, usedDiv);
+			divForContent.parent(usedDiv);
+			renderOnePartOfHtmlWithFilter(child, currentDepth + 1, divForContent);
+			if (isFirstButton && isButton)
+			{
+				firstButtonId = `${id_child_element}_subtablinks`;
+				isFirstButton = false;
+			}
+			//usedDiv.html("</p>\n</div>", true);
 		}
+	}
+
+	if (firstButtonId != "None")
+	{
+		document.getElementById(firstButtonId).click();
 	}
 	//usedDiv.html("</div>");
 	// Content
@@ -187,23 +209,26 @@ function traverseJson(obj, depth, currentElement) {
 
 				nbInElement++;
 
-				if (typeof obj[key] === 'object') {
+				if (Array.isArray(obj[key])) {
 					currentElement.addChildren(oneNewElement);
+					oneNewElement.type = TypeOfElement.Array;
 					traverseJson(obj[key], depth + 1, oneNewElement);
 				}
-				else if (Array.isArray(obj[key])) {
-					currentElement.addElement(oneNewElement);
+				else if (typeof obj[key] === 'object') {
+					currentElement.addChildren(oneNewElement);
+					oneNewElement.type = TypeOfElement.Object;
 					traverseJson(obj[key], depth + 1, oneNewElement);
 				}
 				else {
 					// Local content, keep it
 					oneNewElement.content = obj[key];
-					currentElement.addElement(oneNewElement);
+					oneNewElement.type = TypeOfElement.Leaf;
+					currentElement.addChildren(oneNewElement);
 				}
 			}
 		}
 	}
-	// array
+	// otherwise array or object with empty key!
 	else {
 		nbInElement = 0;
 
@@ -216,21 +241,34 @@ function traverseJson(obj, depth, currentElement) {
 
 			nbInElement++;
 
-			if (typeof item === 'object') {
-				currentElement.addChildren(oneNewElement);
+			if (Array.isArray(item)) {
+				currentElement.addElement(oneNewElement);
+				oneNewElement.key = currentElement.key+"_array"+iElement;
+				oneNewElement.type = TypeOfElement.Array;
 				traverseJson(item, depth + 1, oneNewElement);
 			}
-			else if (Array.isArray(item)) {
+			else if (typeof item === 'object') {
 				currentElement.addElement(oneNewElement);
+				if (item.key)
+				{
+					oneNewElement.key = item.key;
+				}
+				else
+				{
+					oneNewElement.key = "no_key"; // So do not use in leaf!
+				}
+				oneNewElement.type = TypeOfElement.Object;
 				traverseJson(item, depth + 1, oneNewElement);
 			}
 			else {
 				// Local content, keep it
 				oneNewElement.content = item;
+				oneNewElement.type = TypeOfElement.Leaf;
 				currentElement.addElement(oneNewElement);
 			}
 		}
 	}
+	
 	// We are back, calculate the boundaries
 
 	console.log("Nb elements: " + currentElement.nbOfElements() + " nb children: " + currentElement.nbOfChildren());
@@ -529,7 +567,8 @@ function draw() {
 const TypeOfElement = {
 	Root: 'Root',
 	Object: 'Object',
-	Array: 'Array'
+	Array: 'Array',
+	Leaf: 'Leaf'
   };
 
 class Element {
