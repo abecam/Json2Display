@@ -6,7 +6,8 @@ let height = 1080;
 let endColor;
 let toColor;
 let houses;
-const jsonPath = "cvAlain.json";
+//const jsonPath = "cvAlain.json";
+const jsonPath = "creationix.json"; // Block on key
 let jsonObject;
 
 let rootElement;
@@ -93,7 +94,7 @@ function renderInHtmlWithFiltering(rootElement) {
 function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	//console.log("Depth " + currentDepth);
 	// Create div element for the buttons
-	const current_element_txt = `${currentElement.key}${currentDepth}`;
+	const current_element_txt = `${replaceFirstDigitByName(currentElement.key)}${currentDepth}`;
 	const id_current_element = current_element_txt.replace(/\s+/g, '');
 
 	usedDiv.html(`<div class=\"tab\" id=\"${id_current_element}_subbutton\">\n</div>`, true);
@@ -108,7 +109,7 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
 		child = currentElement.elements[iElements];
 
-		const child_element_txt = `${child.key}${currentDepth}`;
+		const child_element_txt = `${replaceFirstDigitByName(child.key)}${currentDepth}`;
 		const id_child_element = child_element_txt.replace(/\s+/g, '');
 
 		let isButton = false; // If it is a button and it is the first one, we click on it by default.
@@ -137,7 +138,7 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
 		child = currentElement.children[iElements];
 
-		const child_element_txt = `${child.key}${currentDepth}`;
+		const child_element_txt = `${replaceFirstDigitByName(child.key)}${currentDepth}`;
 		const id_child_element = child_element_txt.replace(/\s+/g, '');
 
 		let isButton = false; // If it is a button and it is the first one, we click on it by default.
@@ -170,6 +171,30 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	}
 	//usedDiv.html("</div>");
 	// Content
+}
+const digitToName = {
+	'0':'zero',
+	'1':'one',
+	'2':'two',
+	'3':'three',
+	'4':'four',
+	'5':'five',
+	'6':'six',
+	'7':'seven',
+	'8':'eight',
+	'9':'nine',
+	}
+	
+	
+
+function replaceFirstDigitByName(aString)
+{
+	if (aString && aString.charAt(0) >= '0' && aString.charAt(0) <= '9')
+	{
+		let newFirstChar = digitToName[aString.charAt(0)];
+		return newFirstChar + aString.substring(1);
+	}
+	return (aString);
 }
 
 // Fetch the JSON file
