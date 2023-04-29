@@ -11,6 +11,8 @@ const jsonPath = "creationix.json"; // Block on key
 let jsonObject;
 
 let rootElement;
+let nbOfObjectBrowsed = 0;
+
 let pointsForVoronoi;
 
 let cvInitialized = false;
@@ -34,7 +36,7 @@ function setup() {
 	yCenter = ((windowWidth - 40) / 2) + 20;
 
 	ratio = windowWidth/windowHeight;
-	rootElement = new Element(20, 20, windowWidth - 20, windowHeight - 20, xCenter, yCenter, 0, 1, "Root", "Root", -1)
+	rootElement = new Element(20, 20, windowWidth - 20, windowHeight - 20, xCenter, yCenter, 0, 1, nbOfObjectBrowsed, "Root", "Root", -1)
 	fetchJson(jsonPath);
 }
 
@@ -94,7 +96,7 @@ function renderInHtmlWithFiltering(rootElement) {
 function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	//console.log("Depth " + currentDepth);
 	// Create div element for the buttons
-	const current_element_txt = `${replaceFirstDigitByName(currentElement.key)}${currentDepth}`;
+	const current_element_txt = `${replaceFirstDigitByName(currentElement.key)}${currentDepth}${currentElement.nbInParsing}`;
 	const id_current_element = current_element_txt.replace(/\s+/g, '');
 
 	usedDiv.html(`<div class=\"tab\" id=\"${id_current_element}_subbutton\">\n</div>`, true);
@@ -109,7 +111,7 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
 		child = currentElement.elements[iElements];
 
-		const child_element_txt = `${replaceFirstDigitByName(child.key)}${currentDepth}`;
+		const child_element_txt = `${replaceFirstDigitByName(child.key)}${currentDepth}${child.nbInParsing}`;
 		const id_child_element = child_element_txt.replace(/\s+/g, '');
 
 		let isButton = false; // If it is a button and it is the first one, we click on it by default.
@@ -138,7 +140,7 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
 		child = currentElement.children[iElements];
 
-		const child_element_txt = `${replaceFirstDigitByName(child.key)}${currentDepth}`;
+		const child_element_txt = `${replaceFirstDigitByName(child.key)}${currentDepth}${child.nbInParsing}`;
 		const id_child_element = child_element_txt.replace(/\s+/g, '');
 
 		let isButton = false; // If it is a button and it is the first one, we click on it by default.
@@ -230,7 +232,7 @@ function traverseJson(obj, depth, currentElement) {
 		for (let key in obj) {
 			if (obj.hasOwnProperty(key)) { // Needed ?
 				// The boundaries can only be computed on the way back!
-				oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, key, "Child", currentElement)
+				oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, nbOfObjectBrowsed++, key, "Child", currentElement)
 
 				nbInElement++;
 
@@ -262,7 +264,7 @@ function traverseJson(obj, depth, currentElement) {
 			item = obj[iElement];
 
 			// The boundaries can only be computed on the way back!
-			oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, currentElement.key+"_array"+iElement, "Array Element", currentElement)
+			oneNewElement = new Element(0, 0, 0, 0, 0, 0, depth + 1, nbInElement, nbOfObjectBrowsed++, currentElement.key+"_array"+iElement, "Array Element", currentElement)
 
 			nbInElement++;
 
@@ -597,7 +599,7 @@ const TypeOfElement = {
   };
 
 class Element {
-	constructor(xMin, yMin, xMax, yMax, xCenter, yCenter, depth, nbInParent, key, content, parent) {
+	constructor(xMin, yMin, xMax, yMax, xCenter, yCenter, depth, nbInParent, nbInParsing, key, content, parent) {
 		this.xMin = xMin;
 		this.yMin = yMin;
 		this.xMax = xMax;
@@ -606,6 +608,7 @@ class Element {
 		this.yCenter = yCenter;
 		this.depth = depth;
 		this.nbInParent = nbInParent;
+		this.nbInParsing = nbInParsing;
 		this.key = key;
 		this.content = content;
 		this.parent = parent;
