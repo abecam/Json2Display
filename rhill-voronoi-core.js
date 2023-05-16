@@ -560,8 +560,8 @@ Voronoi.prototype.Cell.prototype.pointIntersection = function(x, y) {
 //
 
 Voronoi.prototype.Vertex = function(x, y) {
-    this.x = x;
-    this.y = y;
+    this.x = Math.max(Math.min(x, 1/ε), -1/ε);
+    this.y = Math.max(Math.min(y, 1/ε), -1/ε);
     };
 
 Voronoi.prototype.Edge = function(lSite, rSite) {
@@ -1642,7 +1642,15 @@ Voronoi.prototype.compute = function(sites, bbox) {
         }
 
     // Initialize site event queue
-    var siteEvents = sites.slice(0);
+    //var siteEvents = sites.slice(0);
+    
+    //var ε = this.EPSILON;
+    var siteEvents = sites.map(function(site) {
+    site.x = Math.floor(site.x / ε) * ε;
+    site.y = Math.floor(site.y / ε) * ε;
+    return site;
+    });
+    
     siteEvents.sort(function(a,b){
         var r = b.y - a.y;
         if (r) {return r;}

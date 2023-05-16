@@ -3,8 +3,8 @@
   <head>
     <script src="tabs.js"></script>
     <script src="p5.js"></script>
-    <!-- <script src="p5.sound.min.js"></script> -->
     <script src="rhill-voronoi-core.js"></script>
+    <script src="show_json.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="utf-8" />
   </head>
@@ -12,7 +12,8 @@
     <div class="tab">
       <button class="tablinks" onclick="openTabs(event, 'Filtered_view')" id="defaultOpen">Filtered view</button>
       <button class="tablinks" onclick="openTabs(event, 'Rendered_view')">Rendered view</button>
-      <button class="tablinks" onclick="openTabs(event, 'voronoiCanvas')">Voronoi visualisation</button>
+      <button class="tablinks" onclick="openTabs(event, 'voronoiCanvas')">Voronoi visualisation (WIP, see explanations)</button>
+      <button class="tablinks" onclick="openTabs(event, 'explanationsAndJson')">Explanations and original Json</button>
     </div>
     <!-- Tab content -->
     <div id="Filtered_view" class="tabcontent">
@@ -32,6 +33,49 @@
       <h3>Voronoi visualisation</h3>
       <script src="sketch.js"></script>
     </div>  
+
+    <div id="explanationsAndJson" class="tabcontent">
+      <h3>Explanations</h3>
+      <p>
+        This rendered come from the idea of forcing to structure a document such as a Curriculum Vitae, and be able to get different view of it. 
+        I somehow started with the Voronoi view, and so choose p5.js as the starting API, knowing Processing and its graphics and mathematics capabalities, and a powerful <a href="https://github.com/gorhill/Javascript-Voronoi" target="_blank">Voronoi API</a>, which would need much more work for several obvious (how to use the partitioning in a clear way) and less obvious reasons (distributing the elements from a document on a plan can only be perfect for an even number of nodes...).
+      </p>
+      <p>
+        The next objective was the filtered view.
+        I did a quick version of the rendered view, as it is the simplest to get fully working, but also the less useful for this program: the filtered view must be properly structured to work, and as such can be easily reused for a better version of the rendered view. But getting a quick working rendered view was useful as a point of reference.
+        The filtered view is currently using tabs for the filtering. In the future I might add a text-based filtering, but that will probably be aimed at longer document than a Curriculum Vitae. Note that the current program relies heavily on recursion and will not be adapted for a long document.
+      </p>
+        How does it works?
+        <ul>
+        <li>It starts by creating an intermediate Tree view of the JSon content with only one kind of element, keeping the children (values in a non-final key-value tuple) and the elements (values in an array) separated. The type is also kept (root, child, element, leaf) for easier treatment</li>
+        <li>Then the different rendered are called:
+          <ul>
+            <li>The filtered renderer creates the buttons in a div block, and the content (including sub-buttons) in another div block. The Javascript calls are using prefix to know which elements to click, hide or show, and a default click is also done on the first menu item. The same creation is done recursively in the div content: a new div for the buttons, a new div for the content, new javascript calls with the new prefix, a new default click...</li>
+            <li>The simple renderer uses exactly the same logic of the filtered one, but with div instead of button,  without grouping the buttons and with the div class using the depth (instead of unique IDs used for the filtering logic) so a default style can be defined in the CSS file.</li>
+            <li>The graphical display try to distribute the elements based on their hierarchy on the defined area: the centres of distribution are currentlythe sites for the Voronoi graph. It would be more correct to have sites only for the leafs but to color the partitions following the hierarchy. That will be the object of another update.
+              The distribution is also used to display the rectangles of partitions and to color them using the hierarchy: the parent defines the color, the children lighten it. 
+            </li>
+          </ul>
+        </li>
+      </ul>
+      <p>
+        Current bugs and limits
+        <ul>
+          <li>The Voronoi graph is still fragile: it is enough to have the wrong canvas size to break it. It is due to the distribution that might push 2 sites in the wrong places (related to this <a href="https://github.com/gorhill/Javascript-Voronoi/issues/15" target="_blank">GitHub issue</a>?). I applied and adapted the suggested change from the ticket, and it is quite robust now, but from the discussion could break still.</li>
+          <li>I haven't adapted the voronoi creation to use the hierarchic colors like in the treemap. I will eventually add that.</li>
+          <li>The filtered view creates unique ids and classes for the JS tab code to work (adapted from the tab tutorial of W3C). As such, it is not possible to predefine CSS styles.</li>
+          <li>As the keys of the JSON file are used to define IDs and classes in the filtered view, some allowed characters in JSON keys are not allowed in the HTML. Spaces are currently replaced, as initial numbers (replaced by their name, so 3 becomes "three" for instance), but some are missing, like ":" and "(" ")".</li>
+          <li>And as the CSS styles are currently manually generated, there is a limit to the depth where they apply, currently 6. It could stupidly be generated in a big css static file with many levels, but the best would be to do it using the script. A refactoring is probably needed first.</li>
+          <li>p5.js helps with the manipulation of the DOM, but sometimes it makes things more confusing, as it might seems that you can write sequencially in a DIV, but you will actually not. So applying the \<ul\> before writing the content and the \</ul\> after will not work. The block will be empty and closed before the content. It seems that it is always needed to select the created element to write in it as children (as it would be with pure JS). As p5.js is not targeted to HTML manipulation, it is not the most documented aspect.
+          Thus it is possible that the hierarchy inside the generated DOM is still not correct.</li>
+        </ul>
+      </p>
+      <h3>Original Json</h3>
+      <div id="json_content">
+
+      </div>
+    </div>
+
     </body>
     <script>
       document.getElementById("defaultOpen").click();

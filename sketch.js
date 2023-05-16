@@ -6,8 +6,7 @@ let height = 1080;
 let endColor;
 let toColor;
 let houses;
-//const jsonPath = "cvAlain.json";
-const jsonPath = "creationix.json"; // Block on key
+const jsonPath = "cvAlain.json";
 let jsonObject;
 
 let rootElement;
@@ -20,6 +19,15 @@ let jsonFound;
 let diagram;
 let ratio;
 
+const typeOfViews =
+{
+	voronoi_edges: 'voronoi_edges',
+	voronoi_filled: 'voronoi_filled',
+	tree_view: 'tree_view'
+};
+
+let currentView = typeOfViews.voronoi_edges;
+
 function setup() {
 	font = loadFont('assets/SourceSansPro-Regular.otf');
 
@@ -28,6 +36,21 @@ function setup() {
 	voronoiCanvas.parent("voronoiCanvas");
 	endColor = color(64, 0);
 	toColor = color(255, 255, 255);
+
+	button = createButton('Voronoi edges with treemap');
+	button.parent("voronoiCanvas");
+	button2 = createButton('Voronoi filled');
+	button2.parent("voronoiCanvas");
+	button3 = createButton('Treemap (giving the cell center of the Voronoi partition)');
+	button3.parent("voronoiCanvas");
+	button.position(40, 95);
+	button.mousePressed(showVoronoiEdges);
+
+	button2.position(button.x + button.width, 95);
+	button2.mousePressed(showVoronoiFilled);
+
+	button3.position(button2.x + button2.width, 95);
+	button3.mousePressed(showTreeView);
 
 	// Set text characteristics
 	textFont(font);
@@ -40,9 +63,29 @@ function setup() {
 	fetchJson(jsonPath);
 }
 
+function showVoronoiEdges()
+{
+	currentView = typeOfViews.voronoi_edges;
+	drawDiagram();
+}
+
+function showVoronoiFilled()
+{
+	currentView = typeOfViews.voronoi_filled;
+	drawDiagram();
+}
+
+function showTreeView()
+{
+	currentView = typeOfViews.tree_view;
+	drawDiagram();
+}
+
 function windowResized() {
 	resizeCanvas(windowWidth - 10, windowHeight - 10);
 	ratio = windowWidth/windowHeight;
+
+	drawDiagram();
 }
 
 function renderInHtmlNoFiltering(rootElement) {
@@ -50,37 +93,58 @@ function renderInHtmlNoFiltering(rootElement) {
 
 	currentDepth = 0;
 
-	renderOnePartOfHtml(rootElement, currentDepth);
+	renderOnePartOfHtml(rootElement, currentDepth, divForHtml);
 }
 
-function renderOnePartOfHtml(currentElement, currentDepth) {
-	//console.log("Depth " + currentDepth);
+function renderOnePartOfHtml(currentElement, currentDepth, usedDiv) {
+	const current_element_txt = `${replaceFirstDigitByName(currentElement.key)}${currentDepth}${currentElement.nbInParsing}`;
+	const id_current_element = current_element_txt.replace(/\s+/g, '');
+
 	for (let iElements = 0; iElements < currentElement.elements.length; iElements++) {
 		child = currentElement.elements[iElements];
+
+		const child_element_txt = `${replaceFirstDigitByName(child.key)}${currentDepth}${child.nbInParsing}`;
+		const id_child_element = child_element_txt.replace(/\s+/g, '');
 
 		//console.log("element " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			divForHtml.html(child.content + "<br/>", true);
+			usedDiv.html(`${child.content}<br/>`, true);
 		}
 		else {
-			divForHtml.html("<div class=\"rendered-child-level" + currentDepth + "\"><p>", true);
-			renderOnePartOfHtml(child, currentDepth + 1)
-			divForHtml.html("</p></div>", true);
+			// Title, then content
+			if (child.key != "no_key")	{
+				usedDiv.html(`<div class=\"rendered_subtabs_${currentDepth}\" id=\"${id_child_element}_rendered_subtabheader\"><p>${child.key}</p></div>`, true)
+			}
+			usedDiv.html(`<div class=\"rendered_subtabcontent_${currentDepth}\" id=\"${id_child_element}_rendered_subtabcontent\">\n</div>`, true);
+			const divForContent = select(`#${id_child_element}_rendered_subtabcontent`, usedDiv);
+			divForContent.parent(usedDiv);
+			renderOnePartOfHtml(child, currentDepth + 1, divForContent);
 		}
 	}
+	usedDiv.html(`<ul class=\"rendered_depth${currentDepth}\" id=\"ul_rendered_depth${id_current_element}\">`, true);
+	const ulBlock = select(`#ul_rendered_depth${id_current_element}`);
+
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
 		child = currentElement.children[iElements];
 
+		const child_element_txt = `${replaceFirstDigitByName(child.key)}${currentDepth}${child.nbInParsing}`;
+		const id_child_element = child_element_txt.replace(/\s+/g, '');
+
+		let isButton = false; // If it is a button and it is the first one, we click on it by default.
 		//console.log("children " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			divForHtml.html(child.content + "<br/>", true);
+			ulBlock.html(`<li>${child.content}</li>`, true);
 		}
 		else {
-			divForHtml.html("<div class=\"rendered-element-level" + currentDepth + "\"><p>", true);
-			renderOnePartOfHtml(child, currentDepth + 1)
-			divForHtml.html("</p></div>", true);
+			if (child.key != "no_key") {
+				usedDiv.html(`<div class=\"rendered_subtabs_${currentDepth}\" id=\"${id_child_element}_rendered_subtabheader\"><p>${child.key}</p></div>`, true)
+			}
+			usedDiv.html(`<div class=\"rendered_subtabcontent_${currentDepth}\" id=\"${id_child_element}_rendered_subtabcontent\">\n</div>`, true);
+			const divForContent = select(`#${id_child_element}_rendered_subtabcontent`, usedDiv);
+			divForContent.parent(usedDiv);
+			renderOnePartOfHtml(child, currentDepth + 1, divForContent);
 		}
 	}
 }
@@ -99,11 +163,8 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 	const current_element_txt = `${replaceFirstDigitByName(currentElement.key)}${currentDepth}${currentElement.nbInParsing}`;
 	const id_current_element = current_element_txt.replace(/\s+/g, '');
 
-	usedDiv.html(`<div class=\"tab\" id=\"${id_current_element}_subbutton\">\n</div>`, true);
-	//usedDiv.html(`<div class=\"${id_current_element}_subtabcontent\" id=\"${id_current_element}_subtabcontent\">\n<p>`, true);
-	// Then find it to be able to use them
-	const divForButton = select(`#${id_current_element}_subbutton`, usedDiv);
-	divForButton.parent = usedDiv;
+	let divForButton; // The div will be created when there is the first button and so only if there is at least one. 
+
 	// Buttons
 	let isFirstButton = true;
 	let firstButtonId = "None";
@@ -118,11 +179,18 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 		//console.log("element " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			usedDiv.html(`${child.content}<br/>`, true);
+			usedDiv.html(`<div class=\"filtered_subtabcontent_${currentDepth}\">${child.content}<div/>`, true);
 		}
 		else {
 			// Button, then content
 			if (child.key != "no_key")	{
+				if (isFirstButton)
+				{
+					usedDiv.html(`<div class=\"tab filtered_subtab_${currentDepth}\" id=\"${id_current_element}_subbutton\">\n</div>`, true);
+					// Then find it to be able to use them
+					divForButton = select(`#${id_current_element}_subbutton`, usedDiv);
+					divForButton.parent = usedDiv;
+				}
 				divForButton.html(`<button class=\"${id_current_element}_subtablinks\" id=\"${id_child_element}_subtablinks\" onclick=\"openSubTabs(event, '${id_child_element}_subtabcontent', '${id_current_element}')\">${child.key}</button>`, true)
 				isButton = true;
 			}
@@ -137,6 +205,8 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 			}
 		}
 	}
+	usedDiv.html(`<ul class=\"filtered_depth${currentDepth}\" id=\"ul_filtered_depth${id_current_element}\">`, true);
+	const ulBlock = select(`#ul_filtered_depth${id_current_element}`);
 	for (let iElements = 0; iElements < currentElement.children.length; iElements++) {
 		child = currentElement.children[iElements];
 
@@ -147,10 +217,17 @@ function renderOnePartOfHtmlWithFilter(currentElement, currentDepth, usedDiv) {
 		//console.log("children " + child.content);
 		if (child.nbOfElements() + child.nbOfChildren() == 0) {
 			// A leaf :)
-			usedDiv.html(`${child.content}<br/>`, true);
+			ulBlock.html(`<div class=\"filtered_subtabcontent_${currentDepth}\"><li>${child.content}</li><div/>`, true);
 		}
 		else {
 			if (child.key != "no_key") {
+				if (isFirstButton)
+				{
+					usedDiv.html(`<div class=\"tab filtered_subtab_${currentDepth}\" id=\"${id_current_element}_subbutton\">\n</div>`, true);
+					// Then find it to be able to use them
+					divForButton = select(`#${id_current_element}_subbutton`, usedDiv);
+					divForButton.parent = usedDiv;
+				}
 				divForButton.html(`<button class=\"${id_current_element}_subtablinks\" id=\"${id_child_element}_subtablinks\" onclick=\"openSubTabs(event, '${id_child_element}_subtabcontent', '${id_current_element}')\">${child.key}</button>`, true)
 				isButton = true;
 			}
@@ -212,17 +289,17 @@ function fetchJson(jsonPath) {
 			// Create partitions object to store objects based on depth
 			//const partitions = {};
 			jsonFound = json;
+
+			// Show the original JSon in the explanation div
+			syntaxHighlight(jsonFound);
 			// Call the traverseJson function with depth 0
 			traverseJson(json, 0, rootElement);
 		})
-	/*.catch(error => {
-	  console.error(`Error fetching or parsing JSON file: ${error}`);
-	});*/
 }
 // Function to recursively traverse the JSON object and store objects in partitions based on depth
 function traverseJson(obj, depth, currentElement) {
 
-	console.log("Depth is " + depth);
+	//console.log("Depth is " + depth);
 	// key value
 	// Object -> go deeper
 	// Other -> Store as content
@@ -298,14 +375,16 @@ function traverseJson(obj, depth, currentElement) {
 	
 	// We are back, calculate the boundaries
 
-	console.log("Nb elements: " + currentElement.nbOfElements() + " nb children: " + currentElement.nbOfChildren());
+	//console.log("Nb elements: " + currentElement.nbOfElements() + " nb children: " + currentElement.nbOfChildren());
+	/*
 	if (currentElement.parent != -1) {
 		console.log("I am " + currentElement.parent.nbInParent + " in my parent segment");
 	}
+	*/
 
 	// Call doSomething() when the full JSON browsing is finished
 	if (depth === 0) {
-		console.log("Current element " + currentElement.content); // Should always be root and only root (TODO: add test)
+		//console.log("Current element " + currentElement.content); // Should always be root and only root (TODO: add test)
 		// Finished, calculate the boundaries
 		// Element in columns aside children in columns too
 
@@ -315,9 +394,10 @@ function traverseJson(obj, depth, currentElement) {
 
 		renderInHtmlWithFiltering(currentElement);
 		//console.log("Sites 0: " + pointsForVoronoi);
-		//makeHouses(pointsForVoronoi);
 
 		cvInitialized = true;
+
+		drawDiagram();
 	}
 }
 
@@ -332,23 +412,8 @@ function doTheInitialDistribution(currentRootElement) {
 }
 
 function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
-	let numObjects = 0;
-
-	for (let iElements = 0; iElements < element.elements.length; iElements++) {
-		oneElement = element.elements[iElements];
+	let numObjects = element.elements.length + element.children.length;
 		
-		if (oneElement.nbOfElements() + oneElement.nbOfChildren() > 0) {
-			numObjects++;
-		}
-	}
-
-	for (let iElements = 0; iElements < element.children.length; iElements++) {
-		oneElement = element.children[iElements];
-		
-		if (oneElement.nbOfElements() + oneElement.nbOfChildren() > 0) {
-			numObjects++;
-		}
-	}
 	//console.log(" AAAA: numObjects " + numObjects + " , " + element.nbOfChildren() + " : " + element.nbOfElements());
 
 	// Try to fit to our ratio
@@ -356,7 +421,8 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 	const gridSizeY = Math.ceil(Math.sqrt(numObjects/ratio)); // Grid size is the square root of number of objects rounded up
 	const gridSizeX = Math.ceil(numObjects/gridSizeY)
 
-	console.log(numObjects+" distributed on "+gridSizeX +", "+gridSizeY);
+	//console.log(numObjects+" distributed on "+gridSizeX +", "+gridSizeY);
+
 	const cellWidth = xSize / gridSizeX;
 	const cellHeight = ySize / gridSizeY;
 
@@ -380,7 +446,7 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 			element.withColor = color(100+random(155),100+random(155),100+random(155))
 		}
 */
-		if (oneElement.nbOfElements() + oneElement.nbOfChildren() == 0) {
+		if (oneElement.type == TypeOfElement.Leaf) {
 			textToShow += oneElement.content + "\n";
 		}
 		//else
@@ -399,7 +465,7 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 			element.withColor = color(100+random(155),100+random(155),100+random(155))
 		}
 		*/
-		if (oneElement.nbOfElements() + oneElement.nbOfChildren() == 0) {
+		if (oneElement.type == TypeOfElement.Leaf) {
 			textToShow += oneElement.content + "\n";
 		}
 		//else
@@ -427,12 +493,12 @@ function distributeObjectsOnPlane(element, xSize, ySize, fromX, fromY) {
 		const xPos = fromX + col * cellWidth;
 		const yPos = fromY + row * cellHeight;
 
-		console.log(i+" on "+row +", "+col);
-		// Use xPos and yPos as the coordinates to place the object on the plane
+		//console.log(i+" on "+row +", "+col);
+
 		//console.log(`Object: ${obj.key}: ${obj.value}`);
 		//console.log(" From " + fromX + " , " + fromY + " : " + col + " , " + row + " : " + i);
 		//console.log(`Position: x=${xPos}, y=${yPos}`);
-		// Alternatively, you can use xPos and yPos to dynamically create elements on the plane using DOM manipulation or other rendering techniques.
+
 		oneElement.xMin = xPos;
 		oneElement.yMin = yPos;
 
@@ -513,7 +579,56 @@ function drawElements(currentElement, currentDepth) {
 	}
 }
 
-function makeHouses(sites) {
+function drawVoronoiFilled(sites) {
+	var voronoi = new Voronoi();
+	var bbox = { xl: 20, xr: windowWidth - 20, yt: 20, yb: windowHeight - 20 };
+
+	diagram = voronoi.compute(sites, bbox);
+
+	var cells = diagram.cells, iCell = cells.length, cell, halfedges, nHalfedges, iHalfedge, v, showGrout = true, showSites = true, mustFill = true;
+	while (iCell--) {
+		cell = cells[iCell];
+		halfedges = cell.halfedges;
+		nHalfedges = halfedges.length;
+		if (nHalfedges) {
+			if (showGrout || mustFill) {
+				v = halfedges[0].getStartpoint();
+				beginShape();
+				//ctx.moveTo(v.x,v.y);
+				push();
+				stroke(color(0, 0, 0));
+				fill(color(50 + random(205), 50 + random(205), 40 + random(205)));
+				const startx = v.x;
+				const starty = v.y;
+				translate(v.x, v.y);
+				for (iHalfedge = 0; iHalfedge < nHalfedges; iHalfedge++) {
+					v = halfedges[iHalfedge].getEndpoint();
+					//ctx.lineTo(v.x,v.y);
+					vertex(v.x - startx, v.y - starty);
+				}
+				endShape(CLOSE);
+				if (mustFill) {
+					//ctx.fillStyle = cell.site.color.rgbToHex();
+					//ctx.fill();
+				}
+				if (showGrout) {
+					//ctx.stroke();
+				}
+			}
+			pop();
+			if (showSites) {
+				//ctx.fillStyle = 'black';
+				//ctx.fillRect(cell.site.x-0.5,cell.site.y-0.5,1.5,1.5);
+				push();
+				stroke(0, 0, 0);
+				noFill();
+				rect(1 + cell.site.x - 0.5, cell.site.y - 0.5, 1.5, 1.5);
+				pop();
+			}
+		}
+	}
+}
+function drawVoronoi(sites) {
 	var voronoi = new Voronoi();
 	var bbox = { xl: 20, xr: windowWidth - 20, yt: 20, yb: windowHeight - 20 }; // xl is x-left, xr is x-right, yt is y-top, and yb is y-bottom
 	//var sites = [ {x: 200, y: 200}, {x: 50, y: 250}, {x: 400, y: 100}, {x: 200, y: 100}, {x: 300, y: 50} /* , ... */ ];
@@ -532,16 +647,19 @@ function makeHouses(sites) {
 	if (nEdges) {
 		let edge;
 
+		push();
 		stroke("red");
+		noFill();
+
 		//ctx.beginPath();
 		while (nEdges--) {
 
 			edge = edges[nEdges];
 
-			print(edge.va + " , " + edge.vb);
-
 			line(edge.va.x, edge.va.y, edge.vb.x, edge.vb.y);
 		}
+
+		pop();
 		//ctx.stroke();
 	}
 	// how many sites do we have?
@@ -574,7 +692,11 @@ function makeHouses(sites) {
 	//ctx.fillStyle = '#44f';
 	while (nSites--) {
 		site = sites[nSites];
+		push();
+		stroke(0, 0, 0);
+		noFill();
 		rect(site.x - 2 / 3, site.y - 2 / 3, 2, 2);
+		pop();
 	}
 	//ctx.fill();
 }
@@ -583,12 +705,25 @@ function mousePressed() {
 	// Check which element is selected and zoom in (out with left click?)
 }
 
+function drawDiagram()
+{
+	if (cvInitialized) {
+		if (currentView == typeOfViews.tree_view) {
+			drawAllElements();
+		}
+		else if (currentView == typeOfViews.voronoi_filled) {
+			drawVoronoiFilled(pointsForVoronoi);
+		}
+		else if (currentView == typeOfViews.voronoi_edges) {
+		drawAllElements();
+			drawVoronoi(pointsForVoronoi);
+	}
+	}
+}
+
 function draw() {
 	//background(64);
-	if (cvInitialized) {
-		//makeHouses(pointsForVoronoi);
-		drawAllElements();
-	}
+	
 }
 
 const TypeOfElement = {
